@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape World | Maze & 8-Puzzle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <!-- Start Screen Overlay -->
+    <div id="start-overlay" class="overlay">
+        <div class="card start-card">
+            <h1>Welcome to <span class="highlight">Escape World</span></h1>
+            <p>Enter your name to begin the challenge.</p>
+            <input type="text" id="player-name-input" placeholder="Your Name" maxlength="15">
+            <button id="start-game-btn" class="primary-btn large-btn">Start Adventure</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <h1>Escape <span class="highlight">World</span></h1>
+            <p>Explore BFS, DFS, and A* in real-time.</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="maze">Maze Solver</button>
+            <button class="tab-btn" data-tab="puzzle">8-Puzzle Solver</button>
+            <button class="tab-btn" data-tab="leaderboard-section">Leaderboard</button>
+        </nav>
+
+        <main>
+            <!-- Maze Section -->
+            <section id="maze-section" class="tab-content active">
+                <div class="level-indicator">
+                    <span id="current-level-display">Level 1</span>
+                    <span class="player-name-display">Player: <span id="display-player-name">Guest</span></span>
+                </div>
+
+                <div class="guidelines" id="maze-guidelines">
+                    <h3>How to Use</h3>
+                    <p>Select an algorithm (BFS, DFS, or A*), adjust the speed, and click <strong>Visualize</strong> to
+                        watch the AI find the path!</p>
+                </div>
+                <div class="guidelines hidden" id="maze-play-guidelines">
+                    <h3>How to Play</h3>
+                    <p>Use <strong>Arrow Keys</strong> or <strong>WASD</strong> to move the red dot to the goal (G).</p>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Mode</label>
+                        <div class="mode-toggle">
+                            <button id="mode-visualize" class="mode-btn active">AI Solver</button>
+                            <button id="mode-play" class="mode-btn">Play Yourself</button>
+                        </div>
+                    </div>
+
+                    <!-- AI Controls -->
+                    <div id="ai-controls" class="controls-subset">
+                        <div class="control-group">
+                            <label>Algorithm</label>
+                            <select id="maze-algo">
+                                <option value="bfs">BFS (Shortest Path)</option>
+                                <option value="dfs">DFS (Deep Search)</option>
+                                <option value="astar">A* (Heuristic)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Speed</label>
+                            <input type="range" id="maze-speed" min="10" max="500" value="100">
+                        </div>
+                        <button id="maze-solve-btn" class="primary-btn">Visualize</button>
+                    </div>
+
+                    <!-- Play Controls -->
+                    <div id="play-controls" class="controls-subset hidden">
+                        <div class="game-info" style="margin: 0;">
+                            <span class="timer">Time: <span id="maze-timer">00:00</span></span>
+                        </div>
+                        <button id="maze-play-reset-btn" class="secondary-btn">Reset</button>
+                    </div>
+                </div>
+
+                <div class="visualization-area">
+                    <div id="maze-grid" class="maze-grid"></div>
+                    <div class="stats" id="maze-stats">
+                        <span>Visited: <strong id="maze-visited-count">0</strong></span>
+                        <span>Path Length: <strong id="maze-path-count">0</strong></span>
+                        <span id="maze-status">Ready</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8-Puzzle Section -->
+            <section id="puzzle-section" class="tab-content">
+                <div class="guidelines">
+                    <h3>How to Play</h3>
+                    <p>Click on the tiles adjacent to the empty space to move them. Goal: Order the numbers 1-8.</p>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Algorithm</label>
+                        <select id="puzzle-algo">
+                            <option value="astar">A* (Recommended)</option>
+                            <option value="bfs">BFS (Slow for deep)</option>
+                            <option value="dfs">DFS (Very Long)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Speed</label>
+                        <input type="range" id="puzzle-speed" min="50" max="1000" value="300">
+                    </div>
+                    <button id="puzzle-solve-btn" class="primary-btn">Visualize Solver</button>
+                    <button id="puzzle-scramble-btn" class="secondary-btn">Scramble</button>
+                </div>
+
+                <div class="visualization-area">
+                    <div class="game-info">
+                        <span class="timer">Time: <span id="puzzle-timer">00:00</span></span>
+                    </div>
+                    <div id="puzzle-board" class="puzzle-board">
+                        <!-- Tiles generated by JS -->
+                    </div>
+                    <div class="stats" id="puzzle-stats">
+                        <span>Steps: <strong id="puzzle-step-count">0</strong></span>
+                        <span id="puzzle-status">Ready</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard Section -->
+            <section id="leaderboard-section-section" class="tab-content">
+                <div class="leaderboard-container">
+                    <h2>🏆 Hall of Fame</h2>
+                    <div id="leaderboard-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Celebration Modal -->
+    <div id="congrats-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🎉 Congratulations! 🎉</h2>
+            <p id="congrats-message">You solved the puzzle!</p>
+            <button id="close-modal-btn" class="primary-btn animate-pulse">Next Level</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
