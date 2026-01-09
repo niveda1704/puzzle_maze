@@ -14,8 +14,22 @@ const state = {
     playerName: "Guest",
     currentLevelIdx: 0,
     levels: [], // To be fetched
-    mazeElapsedTime: 0
+    mazeElapsedTime: 0,
+    leaderboardInterval: null
 };
+
+
+// --- Sound Effects ---
+const sounds = {
+    move: new Audio('/static/sounds/move.wav'),
+    win: new Audio('/static/sounds/win.wav')
+};
+
+// Pre-load / Error handling
+Object.values(sounds).forEach(s => {
+    s.addEventListener('error', () => console.log("Audio file not found, continuing without sound."));
+});
+
 
 // --- DOM Elements ---
 const tabs = document.querySelectorAll('.tab-btn');
@@ -175,10 +189,23 @@ function setupTabs() {
             const sec = document.getElementById(secId);
             if (sec) sec.classList.add('active');
 
-            if (target.includes('leaderboard')) loadLeaderboard();
+            if (target.includes('leaderboard')) {
+                loadLeaderboard();
+                // Start auto-refresh polling
+                if (!state.leaderboardInterval) {
+                    state.leaderboardInterval = setInterval(loadLeaderboard, 5000);
+                }
+            } else {
+                // Stop polling if not on leaderboard tab
+                if (state.leaderboardInterval) {
+                    clearInterval(state.leaderboardInterval);
+                    state.leaderboardInterval = null;
+                }
+            }
         });
     });
 }
+
 
 // --- Maze Logic ---
 function renderMaze(mazeData) {
@@ -325,11 +352,18 @@ function movePlayer([dr, dc]) {
     state.playerPos = [nr, nc];
     renderPlayer();
 
+    // Play move sound
+    sounds.move.currentTime = 0;
+    sounds.move.play().catch(e => { });
+
     if (state.maze[nr][nc] === 'G') {
         stopMazeTimer();
+        // Play win sound
+        sounds.win.play().catch(e => { });
         showMazeCongrats();
     }
 }
+
 
 function startMazeTimer() {
     if (state.mazeTimerInterval) return;
@@ -392,28 +426,44 @@ function renderLeaderboard(scores) {
         return;
     }
 
-    // Sort logic handled in frontend for display? Or backend order?
-    // Let's assume backend returns array, we sort by level desc, time asc
-    scores.sort((a, b) => {
-        if (a.level !== b.level) return b.level - a.level; // Higher level first
-        return a.time - b.time; // Lower time best
+    // Grouping by level
+    const levelsMap = {};
+    scores.forEach(s => {
+        if (!levelsMap[s.level]) levelsMap[s.level] = [];
+        levelsMap[s.level].push(s);
     });
 
-    scores.forEach((s, idx) => {
-        const div = document.createElement('div');
-        div.className = 'leaderboard-entry';
-        div.innerHTML = `
-            <div style="display:flex; align-items:center;">
-                <span class="rank-badge">${idx + 1}</span>
-                <strong>${s.name}</strong>
-            </div>
-            <div>
-                <span class="highlight">Lvl ${s.level}</span> - ${s.time.toFixed(2)}s
-            </div>
-        `;
-        container.appendChild(div);
+    // Sort levels descending
+    const levels = Object.keys(levelsMap).sort((a, b) => b - a);
+
+    levels.forEach(lvl => {
+        const lvlHeader = document.createElement('h3');
+        lvlHeader.className = 'leaderboard-lvl-header';
+        lvlHeader.textContent = `Level ${lvl}`;
+        lvlHeader.style.marginTop = '1.5rem';
+        lvlHeader.style.color = 'var(--primary)';
+        container.appendChild(lvlHeader);
+
+        // Sort scores in this level by time ASC
+        const levelScores = levelsMap[lvl].sort((a, b) => a.time - b.time).slice(0, 5);
+
+        levelScores.forEach((s, idx) => {
+            const div = document.createElement('div');
+            div.className = 'leaderboard-entry';
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <span class="rank-badge">${idx + 1}</span>
+                    <strong>${s.name}</strong>
+                </div>
+                <div>
+                    ${s.time.toFixed(2)}s
+                </div>
+            `;
+            container.appendChild(div);
+        });
     });
 }
+
 
 // --- 8-Puzzle Logic ---
 // (Kept mostly same, just ensuring variables exist)

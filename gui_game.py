@@ -33,6 +33,20 @@ COLOR_BTN = (59, 130, 246)
 COLOR_BTN_HOVER = (37, 99, 235)
 
 pygame.init()
+pygame.mixer.init()
+
+# --- Sound Effects ---
+SND_MOVE = None
+SND_WIN = None
+try:
+    # Attempt to load sounds if they exist
+    import os
+    if not os.path.exists('sounds'): os.makedirs('sounds')
+    SND_MOVE = pygame.mixer.Sound('sounds/move.wav')
+    SND_WIN = pygame.mixer.Sound('sounds/win.wav')
+except Exception as e:
+    print(f"Audio notice: {e}. Place move.wav and win.wav in 'sounds/' folder.")
+
 FONT_TITLE = pygame.font.SysFont('Arial', 36, bold=True)
 FONT_UI = pygame.font.SysFont('Arial', 18)
 FONT_TILE = pygame.font.SysFont('Arial', 32, bold=True)
@@ -47,18 +61,27 @@ class Leaderboard:
     def load(self):
         try:
             with open(self.file, 'r') as f:
-                return json.load(f)
+                self.scores = json.load(f)
+                return self.scores
         except:
+            self.scores = []
             return []
+
+    def refresh(self):
+        """Reload scores from file to ensure it's up to date."""
+        self.load()
+
 
     def save(self):
         with open(self.file, 'w') as f:
             json.dump(self.scores, f)
 
     def add_score(self, name, level, time_val):
+        self.load() # Ensure we have the latest scores before adding
         self.scores.append({'name': name, 'level': level, 'time': round(time_val, 2)})
-        self.scores.sort(key=lambda x: x['time']) # Sort by time
+        # Note: We might want to sort by level and then time, but for now keeping it simple
         self.save()
+
 
     def get_top_scores(self, level):
         level_scores = [s for s in self.scores if s['level'] == level]
@@ -131,7 +154,9 @@ class GameState:
         self.reset_puzzle_vis()
         
     def switch_to_leaderboard(self):
+        leaderboard.refresh() # Update from file
         self.mode = 'LEADERBOARD'
+
 
     def load_level(self, idx):
         if idx >= len(MAZE_LEVELS): idx = 0 # Loop or stay at max
@@ -315,8 +340,11 @@ def draw_name_input(screen):
     name_txt = FONT_TITLE.render(gameState.player_name + "_", True, COLOR_ACCENT)
     screen.blit(name_txt, name_txt.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 60)))
 
+def main():
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Escape World")
     clock = pygame.time.Clock()
+
     
     # Buttons
     b_maze = Button(20, 20, 100, 40, "Maze", gameState.switch_to_maze)
@@ -364,9 +392,13 @@ def draw_name_input(screen):
                     if 0 <= nr < len(gameState.maze) and 0 <= nc < len(gameState.maze[0]):
                         if gameState.maze[nr][nc] != '1':
                             gameState.maze_player_pos = (nr, nc)
+                            if SND_MOVE: SND_MOVE.play()
+                            
                             if gameState.maze[nr][nc] == 'G':
+                                if SND_WIN: SND_WIN.play()
                                 gameState.maze_finished = True
                                 gameState.mode = 'NAME_INPUT'
+
 
         # Updates
         b_maze.update(mouse_pos, mouse_click)
