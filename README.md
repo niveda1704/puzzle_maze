@@ -2,7 +2,7 @@
 
 **Escape World** is an interactive web-based visualization tool and game for pathfinding algorithms (BFS, DFS, A*). It features a playable Maze mode and an 8-Puzzle solver.
 
-![Escape World Screenshot](https://via.placeholder.com/800x400?text=Escape+World+Preview)
+
 
 ## Features
 
